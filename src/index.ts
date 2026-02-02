@@ -380,7 +380,7 @@ app.post('/generate-blog', async (req, res) => {
     // Wait for vector store to be ready (files indexed)
     console.log('[WORKER] Checking vector store status...')
     let attempts = 0
-    const maxAttempts = 30 // 30 seconds max wait
+    const maxAttempts = 120 // 2 minutes max wait (large PDFs can take a while)
     while (attempts < maxAttempts) {
       const vs = await openai.vectorStores.retrieve(vectorStoreId)
       if (vs.file_counts.in_progress === 0) {
@@ -392,7 +392,7 @@ app.post('/generate-blog', async (req, res) => {
       attempts++
     }
     if (attempts >= maxAttempts) {
-      throw new Error('Vector store indexing timed out after 30 seconds')
+      throw new Error('Vector store indexing timed out after 2 minutes')
     }
 
     // Generate blog using OpenAI Responses API
