@@ -220,6 +220,7 @@ function markdownToLexical(markdown: string): object {
         type: 'heading',
         tag: `h${level}`,
         version: 1,
+        indent: 0,
         children: [{ type: 'text', text, version: 1 }],
       })
       i++
@@ -242,10 +243,12 @@ function markdownToLexical(markdown: string): object {
         listItems.push({
           type: 'listitem',
           version: 1,
+          indent: 0,
           children: [
             {
               type: 'paragraph',
               version: 1,
+              indent: 0,
               children: parseInlineFormatting(match[1]),
             },
           ],
@@ -268,6 +271,7 @@ function markdownToLexical(markdown: string): object {
     children.push({
       type: 'paragraph',
       version: 1,
+      indent: 0,
       children: parseInlineFormatting(trimmed),
     })
     i++
