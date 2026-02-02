@@ -377,6 +377,24 @@ app.post('/generate-blog', async (req, res) => {
       { $set: { blogGenerationStatus: 'generating', blogGenerationError: null } }
     )
 
+    // Wait for vector store to be ready (files indexed)
+    console.log('[WORKER] Checking vector store status...')
+    let attempts = 0
+    const maxAttempts = 30 // 30 seconds max wait
+    while (attempts < maxAttempts) {
+      const vs = await openai.vectorStores.retrieve(vectorStoreId)
+      if (vs.file_counts.in_progress === 0) {
+        console.log(`[WORKER] Vector store ready (${vs.file_counts.completed} files indexed)`)
+        break
+      }
+      console.log(`[WORKER] Vector store indexing: ${vs.file_counts.in_progress} files in progress, waiting...`)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      attempts++
+    }
+    if (attempts >= maxAttempts) {
+      throw new Error('Vector store indexing timed out after 30 seconds')
+    }
+
     // Generate blog using OpenAI Responses API
     const userMessage = `Please read and analyze the attached academic paper titled "${paperTitle}" using the file_search tool. Then write a blog post about it following the style guidelines in your instructions.
 
