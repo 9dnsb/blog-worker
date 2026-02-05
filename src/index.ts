@@ -6,7 +6,7 @@ const app = express()
 app.use(express.json())
 
 // Environment variables
-const PORT = process.env.PORT || 3001
+const PORT = Number(process.env.PORT) || 3001
 const MONGODB_URI = process.env.DATABASE_URI!
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!
 const WORKER_SECRET = process.env.WORKER_SECRET! // Shared secret for auth
@@ -542,6 +542,6 @@ Remember to use the exact section structure and emoji headers specified in your 
 })
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`[WORKER] Blog worker running on port ${PORT}`)
 })
