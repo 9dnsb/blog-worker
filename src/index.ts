@@ -384,23 +384,34 @@ app.post('/generate-blog', async (req, res) => {
     const blogPostsCollection = db.collection('blog-posts')
     const usersCollection = db.collection('users')
 
+    // Helper to update progress in MongoDB (for SSE to pick up)
+    const updateProgress = async (message: string) => {
+      await papersCollection.updateOne(
+        { _id: new ObjectId(paperId) },
+        { $set: { blogGenerationProgress: message } }
+      )
+    }
+
     // Update paper status to generating
     await papersCollection.updateOne(
       { _id: new ObjectId(paperId) },
-      { $set: { blogGenerationStatus: 'generating', blogGenerationError: null } }
+      { $set: { blogGenerationStatus: 'generating', blogGenerationError: null, blogGenerationProgress: 'Starting blog generation...' } }
     )
 
     // Wait for vector store to be ready (files indexed)
     console.log('[WORKER] Checking vector store status...')
+    await updateProgress('Checking vector store status...')
     let attempts = 0
     const maxAttempts = 120 // 2 minutes max wait (large PDFs can take a while)
     while (attempts < maxAttempts) {
       const vs = await openai.vectorStores.retrieve(vectorStoreId)
       if (vs.file_counts.in_progress === 0) {
         console.log(`[WORKER] Vector store ready (${vs.file_counts.completed} files indexed)`)
+        await updateProgress(`Vector store ready (${vs.file_counts.completed} files indexed)`)
         break
       }
       console.log(`[WORKER] Vector store indexing: ${vs.file_counts.in_progress} files in progress, waiting...`)
+      await updateProgress(`Indexing files... (${vs.file_counts.in_progress} remaining)`)
       await new Promise((resolve) => setTimeout(resolve, 1000))
       attempts++
     }
@@ -420,6 +431,7 @@ Focus on:
 Remember to use the exact section structure and emoji headers specified in your instructions.`
 
     console.log('[WORKER] Calling GPT-5.2 Responses API...')
+    await updateProgress('Generating blog content with AI...')
 
     const response = await openai.responses.create({
       model: 'gpt-5.2',
@@ -454,6 +466,7 @@ Remember to use the exact section structure and emoji headers specified in your 
     }
 
     console.log(`[WORKER] Content generated, length: ${markdownContent.length}`)
+    await updateProgress('Processing generated content...')
 
     // Extract title from markdown
     const titleMatch = markdownContent.match(/^#\s+(.+)$/m)
@@ -480,6 +493,7 @@ Remember to use the exact section structure and emoji headers specified in your 
     const excerpt = extractExcerpt(contentWithoutTitle)
 
     // Create blog post
+    await updateProgress('Creating blog post in database...')
     const blogPostResult = await blogPostsCollection.insertOne({
       title: blogTitle,
       slug,
