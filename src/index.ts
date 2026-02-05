@@ -441,7 +441,7 @@ app.post('/generate-blog', async (req, res) => {
     const maxAttempts = 300 // 5 minutes max wait
     while (attempts < maxAttempts) {
       const vs = await openai.vectorStores.retrieve(vectorStoreId)
-      if (vs.file_counts.in_progress === 0) {
+      if (vs.file_counts.in_progress === 0 && vs.file_counts.completed + vs.file_counts.failed > 0) {
         if (vs.file_counts.failed > 0) {
           // Get error details from the failed file
           const vsFile = await openai.vectorStores.files.retrieve(file.id, { vector_store_id: vectorStoreId })
