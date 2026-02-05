@@ -1,6 +1,6 @@
 import express from 'express'
 import { MongoClient, ObjectId } from 'mongodb'
-import OpenAI from 'openai'
+import OpenAI, { toFile } from 'openai'
 
 const app = express()
 app.use(express.json())
@@ -377,10 +377,10 @@ app.post('/generate-blog', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const { paperId, paperTitle, vectorStoreId } = req.body
+  const { paperId, paperTitle, pdfUrl } = req.body
 
-  if (!paperId || !paperTitle || !vectorStoreId) {
-    return res.status(400).json({ error: 'Missing required fields: paperId, paperTitle, vectorStoreId' })
+  if (!paperId || !paperTitle || !pdfUrl) {
+    return res.status(400).json({ error: 'Missing required fields: paperId, paperTitle, pdfUrl' })
   }
 
   console.log(`[WORKER] Starting blog generation for paper: ${paperId}`)
@@ -405,26 +405,68 @@ app.post('/generate-blog', async (req, res) => {
       { $set: { blogGenerationStatus: 'generating', blogGenerationError: null, blogGenerationProgress: 'Starting blog generation...' } }
     )
 
+    // Fetch PDF from URL
+    console.log('[WORKER] Fetching PDF from URL...')
+    await updateProgress('Fetching PDF file...')
+    const pdfResponse = await fetch(pdfUrl)
+    if (!pdfResponse.ok) {
+      throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`)
+    }
+    const pdfBuffer = Buffer.from(await pdfResponse.arrayBuffer())
+    console.log(`[WORKER] PDF fetched, size: ${pdfBuffer.length} bytes`)
+
+    // Upload file to OpenAI
+    console.log('[WORKER] Uploading file to OpenAI...')
+    await updateProgress('Uploading file to OpenAI...')
+    const file = await openai.files.create({
+      file: await toFile(pdfBuffer, `${paperTitle}.pdf`, { type: 'application/pdf' }),
+      purpose: 'assistants',
+    })
+    console.log(`[WORKER] File uploaded: ${file.id}`)
+
+    // Create vector store with file
+    console.log('[WORKER] Creating vector store...')
+    await updateProgress('Creating vector store...')
+    const vectorStore = await openai.vectorStores.create({
+      name: paperTitle,
+      file_ids: [file.id],
+    })
+    const vectorStoreId = vectorStore.id
+    console.log(`[WORKER] Vector store created: ${vectorStoreId}`)
+
     // Wait for vector store to be ready (files indexed)
-    console.log('[WORKER] Checking vector store status...')
-    await updateProgress('Checking vector store status...')
+    console.log('[WORKER] Waiting for vector store indexing...')
+    await updateProgress('Indexing file for search...')
     let attempts = 0
-    const maxAttempts = 120 // 2 minutes max wait (large PDFs can take a while)
+    const maxAttempts = 300 // 5 minutes max wait
     while (attempts < maxAttempts) {
       const vs = await openai.vectorStores.retrieve(vectorStoreId)
       if (vs.file_counts.in_progress === 0) {
+        if (vs.file_counts.failed > 0) {
+          // Get error details from the failed file
+          const vsFile = await openai.vectorStores.files.retrieve(file.id, { vector_store_id: vectorStoreId })
+          const errorMsg = vsFile.last_error ? `${vsFile.last_error.code}: ${vsFile.last_error.message}` : 'Unknown error'
+          throw new Error(`Vector store file indexing failed: ${errorMsg}`)
+        }
         console.log(`[WORKER] Vector store ready (${vs.file_counts.completed} files indexed)`)
         await updateProgress(`Vector store ready (${vs.file_counts.completed} files indexed)`)
         break
       }
-      console.log(`[WORKER] Vector store indexing: ${vs.file_counts.in_progress} files in progress, waiting...`, JSON.stringify(vs.file_counts))
-      await updateProgress(`Indexing files... (${vs.file_counts.in_progress} remaining)`)
+      console.log(`[WORKER] Vector store indexing: ${vs.file_counts.in_progress} in progress...`, JSON.stringify(vs.file_counts))
+      await updateProgress(`Indexing file... (${vs.file_counts.in_progress} remaining)`)
       await new Promise((resolve) => setTimeout(resolve, 1000))
       attempts++
     }
     if (attempts >= maxAttempts) {
-      throw new Error('Vector store indexing timed out after 2 minutes')
+      throw new Error('Vector store indexing timed out after 5 minutes')
     }
+
+    // Save OpenAI IDs to MongoDB so deleteFromOpenAI hook can clean up later
+    await papersCollection.updateOne(
+      { _id: new ObjectId(paperId) },
+      { $set: { openaiFileId: file.id, vectorStoreId } }
+    )
+    console.log('[WORKER] Saved OpenAI IDs to paper document')
 
     // Generate blog using OpenAI Responses API
     const userMessage = `Please read and analyze the attached academic paper titled "${paperTitle}" using the file_search tool. Then write a blog post about it following the style guidelines in your instructions.
