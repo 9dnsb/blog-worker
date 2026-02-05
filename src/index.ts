@@ -310,7 +310,7 @@ function parseInlineFormatting(text: string): object[] {
     // Bold
     const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/)
     if (boldMatch) {
-      nodes.push({ type: 'text', text: boldMatch[1], format: 1, version: 1 })
+      nodes.push({ type: 'text', text: boldMatch[1], format: 1, detail: 0, mode: 'normal', style: '', version: 1 })
       remaining = remaining.slice(boldMatch[0].length)
       continue
     }
@@ -318,7 +318,7 @@ function parseInlineFormatting(text: string): object[] {
     // Italic
     const italicMatch = remaining.match(/^\*([^*]+)\*/)
     if (italicMatch) {
-      nodes.push({ type: 'text', text: italicMatch[1], format: 2, version: 1 })
+      nodes.push({ type: 'text', text: italicMatch[1], format: 2, detail: 0, mode: 'normal', style: '', version: 1 })
       remaining = remaining.slice(italicMatch[0].length)
       continue
     }
@@ -328,9 +328,16 @@ function parseInlineFormatting(text: string): object[] {
     if (linkMatch) {
       nodes.push({
         type: 'link',
-        url: linkMatch[2],
-        version: 1,
-        children: [{ type: 'text', text: linkMatch[1], version: 1 }],
+        version: 3,
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        fields: {
+          url: linkMatch[2],
+          newTab: false,
+          linkType: 'custom',
+        },
+        children: [{ type: 'text', text: linkMatch[1], format: 0, detail: 0, mode: 'normal', style: '', version: 1 }],
       })
       remaining = remaining.slice(linkMatch[0].length)
       continue
@@ -339,19 +346,19 @@ function parseInlineFormatting(text: string): object[] {
     // Plain text up to next special char
     const nextSpecial = remaining.search(/[\*\[]/)
     if (nextSpecial === -1) {
-      nodes.push({ type: 'text', text: remaining, version: 1 })
+      nodes.push({ type: 'text', text: remaining, format: 0, detail: 0, mode: 'normal', style: '', version: 1 })
       break
     } else if (nextSpecial === 0) {
       // Special char not part of formatting, treat as text
-      nodes.push({ type: 'text', text: remaining[0], version: 1 })
+      nodes.push({ type: 'text', text: remaining[0], format: 0, detail: 0, mode: 'normal', style: '', version: 1 })
       remaining = remaining.slice(1)
     } else {
-      nodes.push({ type: 'text', text: remaining.slice(0, nextSpecial), version: 1 })
+      nodes.push({ type: 'text', text: remaining.slice(0, nextSpecial), format: 0, detail: 0, mode: 'normal', style: '', version: 1 })
       remaining = remaining.slice(nextSpecial)
     }
   }
 
-  return nodes.length > 0 ? nodes : [{ type: 'text', text: '', version: 1 }]
+  return nodes.length > 0 ? nodes : [{ type: 'text', text: '', format: 0, detail: 0, mode: 'normal', style: '', version: 1 }]
 }
 
 // Health check endpoint
