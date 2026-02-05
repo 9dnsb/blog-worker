@@ -417,7 +417,7 @@ app.post('/generate-blog', async (req, res) => {
         await updateProgress(`Vector store ready (${vs.file_counts.completed} files indexed)`)
         break
       }
-      console.log(`[WORKER] Vector store indexing: ${vs.file_counts.in_progress} files in progress, waiting...`)
+      console.log(`[WORKER] Vector store indexing: ${vs.file_counts.in_progress} files in progress, waiting...`, JSON.stringify(vs.file_counts))
       await updateProgress(`Indexing files... (${vs.file_counts.in_progress} remaining)`)
       await new Promise((resolve) => setTimeout(resolve, 1000))
       attempts++
