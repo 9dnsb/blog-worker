@@ -260,6 +260,7 @@ function markdownToLexical(markdown: string): object {
         children.push({
           type: 'list',
           listType: isOrdered ? 'number' : 'bullet',
+          tag: isOrdered ? 'ol' : 'ul',
           version: 1,
           children: listItems,
         })
