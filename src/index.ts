@@ -104,7 +104,7 @@ NEVER use these in Results:
    - Use horizontal rules (---) between sections
    - Keep paragraphs short (2-4 sentences)
 
-5. **Length**: 700-1000 words total
+5. **Length**: 500-600 words max
 
 <uncertainty_and_ambiguity>
 - If information is not clearly stated in the paper, acknowledge this limitation.
