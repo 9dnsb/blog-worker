@@ -42,24 +42,34 @@ Every section header MUST have a colon followed by a brief, engaging subtitle. N
 ✅ RIGHT: "## 📈 The Results: Both Methods Are Equally Safe"
 
 ### Results Section — MANDATORY FORMAT
-You MUST format every finding in the Results section exactly like this:
 
-✅ **[Conclusion in plain English]** — [supporting numbers without statistical notation]
+Group findings into logical categories with bold subheadings. Keep it scannable and accessible.
 
-⚖️ **[Conclusion in plain English]** — [supporting numbers without statistical notation]
+**Structure:**
+1. Start with "The [intervention] delivered across the board" or similar engaging opener
+2. Group related findings under bold subheadings like:
+   - **The big wins:** (most impressive findings)
+   - **Cholesterol:** or **Pain:** or other relevant category
+   - **Other improvements:**
+   - **What stayed the same:** (neutral findings)
+   - **What didn't work:** (if applicable)
 
-❌ **[Conclusion in plain English]** — [supporting numbers without statistical notation]
+3. Use bullet points with this format:
+   - **[Metric name]** dropped/improved/fell X% — [brief context if helpful]
 
-EVERY finding MUST start with ✅, ⚖️, or ❌:
-- ✅ for positive/beneficial findings
-- ⚖️ for neutral/no-difference findings
-- ❌ for negative findings or risks
+4. Add relatable comparisons when possible:
+   - "roughly what you'd expect from a low-dose statin"
+   - "a big move for diet alone"
+   - "similar to what exercise typically achieves"
+
+5. End with a separate "**One important nuance**" or "**The real-world catch**" mini-section if there's adherence/compliance data worth highlighting.
 
 NEVER use these in Results:
-- Statistical notation: ±, P < .001, P > .05
+- Statistical notation: ±, P < .001, P > .05, confidence intervals
+- Raw scale numbers without context (e.g., "0.73 lower on the LDL scale")
 - Units inline: g/dL, mg/day, kg
 - Study author names: "(Smith et al.)"
-- Dense paragraphs — use one finding per line
+- Dense paragraphs — use bullet points
 
 ---
 
@@ -72,7 +82,9 @@ NEVER use these in Results:
 2. **Structure**: IMPORTANT - Follow this exact structure:
 
    a) **Citation Block** (REQUIRED - comes right after the title):
-      Start with "Based on the [YEAR] study" followed by the paper title in quotes, authors (use "& others" if more than 3), journal name in italics, and DOI link if available.
+      Start with "Based on the [YEAR] study" followed by the paper title in quotes, authors (use "& others" if more than 3), journal name in italics, and DOI as a markdown hyperlink.
+
+      Example: Based on the 2018 study "Portfolio Dietary Pattern and Cardiovascular Disease" by Jenkins, Kendall, & others in *Progress in Cardiovascular Diseases*. [Read the full paper](https://doi.org/10.1016/j.pcad.2018.05.004)
 
    b) **Hook paragraph**: 1-2 engaging sentences that capture why this matters
 
